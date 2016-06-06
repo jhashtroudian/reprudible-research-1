@@ -14,3 +14,39 @@ knitr::opts_chunk$set(echo = TRUE)
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document:
+
+
+code to load the dataset from c:/reprocible-research
+```{r}
+# clean environment
+rm(list=ls())
+setwd("c:/reprocible-research")
+activity_df <- read.csv("activity.csv")
+
+```
+
+load needed packages
+Note: This is just in case I may not use all or even any of the following packages
+
+```{r}
+# laod libraries for tidying - not all will be used in all this weeks assignment
+require(dplyr)
+require(tidyr)
+require(lubridate)
+require(ggplot2)
+
+```
+
+First: plot a histogram of the total number of steps taken each day
+
+```{r}
+# get rid of NAs in data frame
+activity_df_no_na <- na.omit(activity_df)
+# group by date
+gd_activity_df_no_na <- group_by(activity_df_no_na, date)
+stepsums <- summarise(gd_activity_df_no_na, sum(steps)) 
+gooddates<-as.Date(stepsums$date, "%Y-%m-%d")
+barplot(stepsums$`sum(steps)`, names.arg = gooddates)
+
+```
+

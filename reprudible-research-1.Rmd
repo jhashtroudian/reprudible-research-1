@@ -15,6 +15,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document:
 
+#### Load the data (i.e. read.csv())
 
 code to load the dataset from c:/reprocible-research
 ```{r}
@@ -25,7 +26,7 @@ activity_df <- read.csv("activity.csv")
 
 ```
 
-load needed packages
+load the needed packages
 Note: This is just in case I may not use all or even any of the following packages
 
 ```{r}
@@ -51,6 +52,8 @@ print(stepsums)
 hist(stepsums$`sum(steps)`, main = "Histogram of the Total number of steps taken each day", xlab = "total number of steps taken each day")
 
 ```
+## Above: histogram of the total number of steps taken each day 
+
 
 Mean and median number of steps taken each day in this case we get rid of the NAs
 
@@ -59,6 +62,10 @@ mean(na.omit(stepsums$`sum(steps)`))
 median(na.omit(stepsums$`sum(steps)`))
 
 ```
+
+## Mean and Median
+### Mean  of steps taken each day is 10766.19
+### Median number of steps taken each day is 10765
 
 Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
@@ -70,4 +77,80 @@ plot( steps_per_interval$interval,  steps_per_interval$steps, type="l", main = "
 
 ```
 
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
+```{r}
+steps_per_interval[which.max(steps_per_interval$steps),]
+```
+## The interval 835 has the maximum average value of steps 206.1698
+
+Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+```{r}
+sum(is.na(activity_df$steps))
+```
+
+## The number of missing values in the dataset is 2304
+
+
+#### Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+Strategy for imputing the missing data (steps == NA): take the average of data for that interval over all days
+
+```{r}
+# discover number of days
+number_of_days <- nrow(stepsums)
+# make a temporary copy of the data frame
+activity_df_imputated <- activity_df
+for (i in 1:nrow(activity_df_imputated)) {
+  if (is.na(activity_df_imputated$steps[i])) {
+    interval_value <- activity_df_imputated$interval[i]
+    steps_value <- steps_per_interval[steps_per_interval$interval == interval_value,]
+    activity_df_imputated$steps[i] <- steps_value$steps
+  }
+}
+```
+ #### Now draw the imputated histogram
+ 
+ 
+```{r}
+gd_activity_df_imputated <- group_by(activity_df_imputated, date)
+stepsums_imputated <- summarise(gd_activity_df_imputated, sum(steps))
+
+hist(stepsums_imputated$`sum(steps)`, main = "Histogram of the imputated total number of steps taken each day", xlab = "impuatated total number of steps taken each day")
+```
+
+
+#### Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+```{r}
+mean(na.omit(stepsums_imputated$`sum(steps)`))
+median(na.omit(stepsums_imputated$`sum(steps)`))
+```
+
+#### The mean of the impudated steps per interval is 10766.19
+#### and the median is 10766.19
+#### The mean is indentical with the NAs removed. This makes sense given the way we impudated the missing values
+#### Themedia changes from 10765 to 10766.19
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+# translate the data set dates to dates that weekdays can use
+gooddates<-as.Date(stepsums_imputated$date, "%Y-%m-%d")
+days_of_week = weekdays(gooddates)
+activity_df_imputated["type_of_day"] <- as.factor(ifelse(days_of_week %in% c('Saturday','Sunday'), 'weekend', 'weekday'))
+steps_per_interval_WDWE <- aggregate(steps ~ interval + type_of_day, activity_df_imputated, mean)
+qplot(interval, 
+      steps, 
+      data = steps_per_interval_WDWE, 
+      geom=c("line"),
+      xlab = "Interval", 
+      ylab = "Number of steps", 
+      main = "Difference in Steps Weekdays vs. Weekends") +
+  facet_wrap(~ type_of_day, ncol = 1)
+
+```
+
+#### We notice there are slight differences betwen weekdays activity and weekend activity
+#### at weekend people started excercising later
